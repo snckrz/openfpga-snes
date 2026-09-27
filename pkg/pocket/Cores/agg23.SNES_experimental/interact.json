@@ -139,6 +139,20 @@
         "value": 1
       },
       {
+        "name": "Composite Blend",
+        "id": 54,
+        "type": "list",
+        "enabled": true,
+        "address": "0x20C",
+        "persist": true,
+        "writeonly": true,
+        "defaultval": 0,
+        "options": [
+          { "value": 0, "name": "Off" },
+          { "value": 1, "name": "Full" }
+        ]
+      },
+      {
         "name": "Sync dejitter",
         "id": 53,
         "type": "check",

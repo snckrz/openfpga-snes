@@ -57,6 +57,13 @@ generate_boot1_mif "rtl/upstream/releases/boot1.rom" "rtl/mister_top/boot1.mif"
 
 project_open projects/snes_pocket.qpf
 
+# Keep per-variant placement reproducible for the Composite Blend build.
+set_global_assignment -name SEED 1
+if { [lindex $argv 0] == "pal_cx4" } {
+  # Seed 1 had a -0.029 ns palette-memory hold violation; seed 2 passes.
+  set_global_assignment -name SEED 2
+}
+
 if { [lindex $argv 0] == "ntsc" } {
   puts "NTSC"
   set_parameter -name PAL_PLL -entity core_top '0

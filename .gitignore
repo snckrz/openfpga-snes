@@ -76,3 +76,8 @@ cr_ie_info.json
 # ROMS Checklist
 !checklist.sha1
 !checklist.md5
+
+# Local Composite Blend packaging outputs
+__pycache__/
+*.py[cod]
+/build-results/

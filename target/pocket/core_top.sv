@@ -378,6 +378,9 @@ module core_top (
         32'h208: begin
           sync_dejitter <= bridge_wr_data[0];
         end
+        32'h20C: begin
+          composite_blend_enabled <= bridge_wr_data[0];
+        end
         32'hF7000000: begin
           analogizer_settings <= bridge_wr_data[13:0];
         end
@@ -829,6 +832,7 @@ module core_top (
 
   reg use_square_pixels = 0;
   reg blend_enabled = 0;
+  reg composite_blend_enabled = 0;
   reg sync_dejitter = 0;
 
   // Analogizer menu settings (SNAC type, controller assignment, video out)
@@ -1435,6 +1439,25 @@ module core_top (
   wire [23:0] rgb_out;
   wire de_out;
 
+  // Synchronize the menu toggle into the actual Pocket pixel clock domain.
+  wire composite_blend_video;
+  synch_3 #(.WIDTH(1)) composite_settings_s (
+      .i(composite_blend_enabled),
+      .o(composite_blend_video),
+      .clk(clk_video_5_37),
+      .rise(),
+      .fall()
+  );
+  wire [23:0] video_rgb_composite;
+  composite_blend pocket_composite_blend (
+      .clk(clk_video_5_37),
+      .enable(composite_blend_video),
+      .hblank(h_blank_latched),
+      .vblank(v_blank_latched),
+      .rgb_in(video_rgb_pocket),
+      .rgb_out(video_rgb_composite)
+  );
+
   scanline_filler #(
       .SNAP_COUNT (2),
       .SNAP_POINTS('{240, 224}),
@@ -1447,7 +1470,7 @@ module core_top (
 
       .vblank_in(v_blank_latched),
       .hblank_in(h_blank_latched),
-      .rgb_in(video_rgb_pocket),
+      .rgb_in(video_rgb_composite),
 
       .hsync(video_hs),
       .vsync(video_vs),
