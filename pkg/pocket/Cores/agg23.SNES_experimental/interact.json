@@ -3,6 +3,27 @@
     "magic": "APF_VER_1",
     "variables": [
       {
+        "name": "Composite Blend",
+        "id": 54,
+        "type": "list",
+        "enabled": true,
+        "address": "0x20C",
+        "persist": true,
+        "writeonly": true,
+        "defaultval": 0,
+        "options": [
+          { "value": 0, "name": "Off" },
+          { "value": 1, "name": "Kitrinx Style" },
+          { "value": 2, "name": "NTSC Light" },
+          { "value": 3, "name": "NTSC Medium" },
+          { "value": 4, "name": "NTSC Strong" },
+          { "value": 5, "name": "PAL Light" },
+          { "value": 6, "name": "PAL Medium" },
+          { "value": 7, "name": "PAL Strong" },
+          { "value": 8, "name": "PAL Strong+" }
+        ]
+      },
+      {
         "name": "Reset Core",
         "id": 10,
         "type": "action",
@@ -137,20 +158,6 @@
         "writeonly": true,
         "defaultval": 1,
         "value": 1
-      },
-      {
-        "name": "Composite Blend",
-        "id": 54,
-        "type": "list",
-        "enabled": true,
-        "address": "0x20C",
-        "persist": true,
-        "writeonly": true,
-        "defaultval": 0,
-        "options": [
-          { "value": 0, "name": "Off" },
-          { "value": 1, "name": "Full" }
-        ]
       },
       {
         "name": "Sync dejitter",

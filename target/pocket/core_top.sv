@@ -379,7 +379,7 @@ module core_top (
           sync_dejitter <= bridge_wr_data[0];
         end
         32'h20C: begin
-          composite_blend_enabled <= bridge_wr_data[0];
+          composite_blend_enabled <= bridge_wr_data[3:0];
         end
         32'hF7000000: begin
           analogizer_settings <= bridge_wr_data[13:0];
@@ -832,7 +832,7 @@ module core_top (
 
   reg use_square_pixels = 0;
   reg blend_enabled = 0;
-  reg composite_blend_enabled = 0;
+  reg [3:0] composite_blend_enabled = 0;
   reg sync_dejitter = 0;
 
   // Analogizer menu settings (SNAC type, controller assignment, video out)
@@ -922,7 +922,9 @@ module core_top (
   // Raw video status from the core, consumed by the Analogizer resampler.
   wire field_snes, interlace_snes, high_res_snes, dotclk_snes;
 
-  // Pocket LCD feed, optionally blanked for the "Pocket OFF" Analogizer modes.
+  // Shared filtered RGB feed. The Pocket LCD may be blanked independently for
+  // the "Pocket OFF" Analogizer modes, while the analog output remains active.
+  wire [23:0] video_rgb_filtered;
   wire [23:0] video_rgb_pocket;
 
   MAIN_SNES snes (
@@ -1127,7 +1129,7 @@ module core_top (
       end
 
       // Blank the Pocket LCD for the "Pocket OFF" video modes
-      assign video_rgb_pocket = analogizer_video_type[3] ? 24'h000000 : video_rgb_latched;
+      assign video_rgb_pocket = analogizer_video_type[3] ? 24'h000000 : video_rgb_filtered;
 
       // SNAC controller state from the adapter
       wire [15:0] p1_btn, p2_btn, p3_btn, p4_btn;
@@ -1250,14 +1252,14 @@ module core_top (
       end
 
       // Dot-latched video renamed to the active-low blanks the encoders expect
-      wire [7:0] R = video_rgb_latched[23:16];
-      wire [7:0] G = video_rgb_latched[15:8];
-      wire [7:0] B = video_rgb_latched[7:0];
-      wire HSYNC = video_hs_latched;
-      wire VSYNC = video_vs_latched;
-      wire HBlank = ~h_blank_latched;
-      wire VBlank = ~v_blank_latched;
-      wire DOTCLK = prev_dotclk;
+      wire [7:0] R = video_rgb_filtered[23:16];
+      wire [7:0] G = video_rgb_filtered[15:8];
+      wire [7:0] B = video_rgb_filtered[7:0];
+      wire HSYNC = video_hs_filtered;
+      wire VSYNC = video_vs_filtered;
+      wire HBlank = ~h_blank_filtered;
+      wire VBlank = ~v_blank_filtered;
+      wire DOTCLK = dotclk_filtered;
       reg  HSync = 0;
       reg  VSync = 0;
       reg  interlace;
@@ -1380,7 +1382,7 @@ module core_top (
         p1_stick_y  = cont1_joy_y_calibrated;
       end
 
-      assign video_rgb_pocket = video_rgb_latched;
+      assign video_rgb_pocket = video_rgb_filtered;
 
       // Cart port unused; set level translators accordingly (0:IN, 1:OUT)
       assign cart_tran_bank3         = 8'hzz;
@@ -1438,24 +1440,37 @@ module core_top (
   wire [7:0] snap_index;
   wire [23:0] rgb_out;
   wire de_out;
+  wire h_blank_filtered;
+  wire v_blank_filtered;
+  wire video_hs_filtered;
+  wire video_vs_filtered;
+  wire dotclk_filtered;
 
   // Synchronize the menu toggle into the actual Pocket pixel clock domain.
-  wire composite_blend_video;
-  synch_3 #(.WIDTH(1)) composite_settings_s (
+  wire [3:0] composite_blend_video;
+  synch_3 #(.WIDTH(4)) composite_settings_s (
       .i(composite_blend_enabled),
       .o(composite_blend_video),
       .clk(clk_video_5_37),
       .rise(),
       .fall()
   );
-  wire [23:0] video_rgb_composite;
   composite_blend pocket_composite_blend (
       .clk(clk_video_5_37),
-      .enable(composite_blend_video),
-      .hblank(h_blank_latched),
-      .vblank(v_blank_latched),
-      .rgb_in(video_rgb_pocket),
-      .rgb_out(video_rgb_composite)
+      .mode(composite_blend_video),
+      .hblank_in(h_blank_latched),
+      .vblank_in(v_blank_latched),
+      .hsync_in(video_hs_latched),
+      .vsync_in(video_vs_latched),
+      .dotclk_in(prev_dotclk),
+      .interlace_in(interlace_snes),
+      .rgb_in(video_rgb_latched),
+      .rgb_out(video_rgb_filtered),
+      .hblank_out(h_blank_filtered),
+      .vblank_out(v_blank_filtered),
+      .hsync_out(video_hs_filtered),
+      .vsync_out(video_vs_filtered),
+      .dotclk_out(dotclk_filtered)
   );
 
   scanline_filler #(
@@ -1465,12 +1480,12 @@ module core_top (
   ) scanline_filler (
       .clk(clk_video_5_37),
 
-      .hsync_in(video_hs_latched),
-      .vsync_in(video_vs_latched),
+      .hsync_in(video_hs_filtered),
+      .vsync_in(video_vs_filtered),
 
-      .vblank_in(v_blank_latched),
-      .hblank_in(h_blank_latched),
-      .rgb_in(video_rgb_composite),
+      .vblank_in(v_blank_filtered),
+      .hblank_in(h_blank_filtered),
+      .rgb_in(video_rgb_pocket),
 
       .hsync(video_hs),
       .vsync(video_vs),

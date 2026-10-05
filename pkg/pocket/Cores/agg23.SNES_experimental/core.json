@@ -6,11 +6,11 @@
         "snes"
       ],
       "shortname": "SNES_experimental",
-      "description": "Super Nintendo and Super Famicom, experimental build with save states, forced-NMI capture and Analogizer support",
+      "description": "SNES/Super Famicom with NTSC/PAL composite blend modes, save states from drizzt's fork and Analogizer support.",
       "author": "agg23",
-      "url": "https://github.com/drizzt/openfpga-snes",
-      "version": "0.4.4-experimental",
-      "date_release": "2024-09-16"
+      "url": "https://github.com/snckrz/openfpga-snes",
+      "version": "0.2.0-rc.2",
+      "date_release": "2026-10-05"
     },
     "framework": {
       "target_product": "Analogue Pocket",

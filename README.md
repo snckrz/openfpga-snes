@@ -1,46 +1,56 @@
 # SNES for Analogue Pocket
 
-## Composite Blend
+This is my fork of [drizzt’s SNES Experimental core](https://github.com/drizzt/openfpga-snes), based on [agg23’s Analogue Pocket port](https://github.com/agg23/openFPGA-SNES) of the original core by [srg320](https://github.com/srg320) ([Patreon](https://www.patreon.com/srg320)). The fork starts at upstream commit [`397f759`](https://github.com/drizzt/openfpga-snes/commit/397f759356ec680dd516a05a89b3734ea5716d71).
 
-Unofficial build by [snckrz](https://github.com/snckrz), based on [drizzt’s SNES Experimental fork](https://github.com/drizzt/openfpga-snes) of [agg23’s Pocket port](https://github.com/agg23/openFPGA-SNES). Version **2026.09.26-composite1** (2026-09-26).
-
-Adds **Composite Blend: Off / Full** in Core Settings; Off is the default. Full averages neighbouring horizontal RGB pixels to blend dithering and soften edges. Adapted from [Kitrinx’s module](https://github.com/opengateware/openFPGA-Genesis/blob/0032b2c6904131f11496396763a3d8b1a4a19445/src/fpga/core/rtl/cofi.sv), as used in [ericlewis’s Genesis Pocket core](https://github.com/ericlewis/openfpga-genesis). This is simple RGB blending; full NTSC simulation and Adaptive mode are not included.
-
-I’ve tried this build on my Pocket and haven’t noticed any obvious problems. Testing is limited; game-by-game, Dock and save/load coverage hasn’t been documented. Save-state support is unchanged. Compilation, reported timing and filter simulation passed; see [build notes and rebuild instructions](docs/COMPOSITE_BUILD.md).
-
-Includes all seven bitstreams, a BSX memory-file path correction and a PAL CX4 placement-seed adjustment. Pseudo Transparency remains independent; Analogizer output is not filtered.
-
-Ported from the original core developed by [srg320](https://github.com/srg320) ([Patreon](https://www.patreon.com/srg320)). Latest upstream available at https://github.com/MiSTer-devel/SNES_MiSTer.
-
-Please report problems with this build to this fork’s Issues page, including the game, firmware, handheld/Dock mode and filter setting.
+This fork adds the Composite Blend options described below. Please report issues with my additions to this repository. I cannot help with issues in the original core or its ports, as I am not their author; please report those to the relevant upstream repository.
 
 > [!NOTE]
 >
-> Savestates/Memories/Sleep are supported for regular carts, and the DSP, Super FX (GSU), SA-1, and CX4 special chips. S-DD1, SPC7110, and BSX are not supported. See the Savestates/Memories/Sleep section below.
+> Save states, Memories, and Sleep are supported for regular carts and the DSP, Super FX (GSU), SA-1, and CX4 chips. S-DD1, SPC7110, and BSX games are not supported. See [Savestates/Memories/Sleep](#savestatesmemoriessleep) below.
+
+## Composite Blend
+
+Choose **Composite Blend** in Core Settings. **Off** is the default.
+
+| Setting | Effect |
+| --- | --- |
+| Off | Passes the core’s RGB pixels through the filter pipeline without filtering. |
+| Kitrinx Style | Averages neighboring RGB pixels, based on Kitrinx’s `cofi.sv` blend. |
+| NTSC Light / Medium / Strong | Applies progressively stronger horizontal filters to luma and chroma. |
+| PAL Light / Medium / Strong | Uses the corresponding luma response and mixes 75% of current-line chroma with 25% from the previous line. |
+| PAL Strong+ | Uses the PAL Strong horizontal response and mixes current- and previous-line chroma evenly. |
+
+The NTSC and PAL modes derive digital components from the core’s RGB pixels: `Y = (R + 2G + B) >> 2`, `Cr = R − Y`, and `Cb = B − Y`. They filter luma and chroma separately across neighboring pixels, then convert the result back to RGB. PAL modes average chroma between adjacent lines; they do not average luma vertically. Signed arithmetic and output clipping prevent chroma reconstruction from wrapping at RGB limits.
+
+This is a digital luma/chroma bandwidth approximation. It does not encode or decode a composite waveform, model a color subcarrier, or reproduce effects such as dot crawl. The filtered RGB feeds both the Pocket display path and the Analogizer video input; the Analogizer interface is by [RndMnkIII](https://github.com/RndMnkIII). Composite Blend is separate from **Pseudo Transparency**.
+
+The RGB blend style is adapted from [Kitrinx’s `cofi.sv`](https://github.com/opengateware/openFPGA-Genesis/blob/0032b2c6904131f11496396763a3d8b1a4a19445/src/fpga/core/rtl/cofi.sv), as used in [ericlewis’s Genesis Pocket core](https://github.com/ericlewis/openfpga-genesis). The current filter implementation passes its simulation and all seven core variants pass the reported build and constrained timing checks. Pocket hardware testing is pending.
 
 ## Installation
 
-1. Download `agg23.SNES_experimental_2026.09.26-composite1-2026-09-26.zip` from [Releases](https://github.com/snckrz/openfpga-snes/releases).
-2. Back up `Cores/agg23.SNES_experimental`, then merge the ZIP’s `Cores`, `Platforms` and `Assets` folders, where present, into your SD root. Preserve custom palettes and your preferred `video.json`.
-3. Launch the core and select **Composite Blend → Full**. Restore your backup to revert.
+### Manual mode
+Back up `Cores/agg23.SNES_experimental` first; installing this core replaces that folder. Preserve custom palettes and your preferred `video.json`.  
+You can download the latest build from releases as a zip. Just copy its `Assets`, `Cores`, and `Platforms` folders into the root of your SD card, merging the folders. 
+Finder on macOS replaces folders instead of merging them, so hold the alt-key while dragging-dropping them onto the sd-card and click "merge". 
+Restore your backup to revert.
 
-This replaces the existing `agg23.SNES_experimental` core. Updaters may overwrite it. Matching source, build reports and checksums are included in the release.
+The core metadata requires Analogue OS 1.1 or later. Updaters may overwrite a manually installed core.
 
 ## Usage
 
-ROMs should be placed in `/Assets/snes/common`. Both headered and unheadered ROMs are now supported.
+Place ROMs in `/Assets/snes/common`. Both headered and unheadered ROMs are supported.
 
 ## Features
 
 ### Dock Support
 
-Core supports four players/controllers via the Analogue Dock. To enable four player mode, turn on `Use Multitap` setting.
+The core supports four players/controllers through the Analogue Dock. Enable **Use Multitap** for four-player mode.
 
-The `Swap P1 & P2` setting exchanges the controllers driving the first and second SNES ports. It is not saved, so it is off again after the core is reloaded.
+**Swap P1 & P2** exchanges the controllers driving the first and second SNES ports. It resets to off when the core is reloaded.
 
 ### Expansion Chips
 
-All original expansion chips supported by MiSTer are also supported on the Pocket. The full list is:
+The core supports the MiSTer expansion chips listed below:
 
 * SA-1 (Super Mario RPG)
 * Super FX/GSU-1/2 (Star Fox)
@@ -51,50 +61,42 @@ All original expansion chips supported by MiSTer are also supported on the Pocke
 * ST1010 (F1 Roc 2)
 * BSX (Satellaview)
 
-The Super Game Boy, ST011 (Hayazashi Nidan Morita Shougi), and ST018 (Hayazashi Nidan Morita Shougi 2) are not supported in the MiSTer core, and therefore are not supported here. Additionally, the homebrew MSU expansion chip is not currently supported.
+Super Game Boy, ST011 (Hayazashi Nidan Morita Shougi), and ST018 (Hayazashi Nidan Morita Shougi 2) are not supported by the MiSTer core and therefore are not supported here. The MSU-1 homebrew expansion is also unsupported.
 
 #### BSX
 
-BSX ROMs must be patched to run without BIOS. The BSX BIOS is not currently supported
+BSX ROMs must be patched to run without a BIOS. The BSX BIOS is not supported.
 
 ### Savestates/Memories/Sleep
 
-Supported: regular carts and the DSP, Super FX/GSU, SA-1, and CX4 special chips.
+Save states, Memories, and Sleep support regular carts and the DSP, Super FX/GSU, SA-1, and CX4 chips. They are not supported for S-DD1, SPC7110, or BSX games.
 
-Not supported: S-DD1, SPC7110, and BSX games
-
-Sleep requires working savestates. Processing the power button on your Pocket while playing an unsupported cart type will turn off the Pocket while losing your current game state.
+Sleep requires working save states. Pressing the Pocket power button while playing an unsupported cart can turn off the Pocket and lose the current game state.
 
 ### Video
 
-* `Square Pixels` - The internal resolution of the SNES is a 8:7 pixel aspect ratio (wide pixels), which roughly corresponds to what users would see on 4:3 display aspect ratio CRTs. Some games are designed to be displayed at 8:7 PAR (the core's default), and others at 1:1 PAR (square pixels). The `Square Pixels` option is provided to switch to a 1:1 pixel aspect ratio
-* `Pseudo Transparency` - Enable blending of adjacent pixels, used in some games to simulate transparency
+* **Square Pixels** switches from the SNES’s 8:7 pixel aspect ratio to 1:1 for games designed around square pixels.
+* **Pseudo Transparency** blends adjacent pixels to simulate transparency in some games.
 
 ### Turbo
 
-* `CPU Turbo` - Applies a speed increase to the main SNES CPU. **NOTE:** This has different compatibility with different games. See the [MiSTer list of games](https://github.com/MiSTer-devel/SNES_MiSTer/blob/master/SNES_Turbo.md) that this feature works with
-* `SuperFX Turbo` - Applies a speed increase to the GSU (SuperFX) chip. Can be used in addition to the `CPU Turbo` option in games like Star Fox to maintain a higher frame rate.
+* **CPU Turbo** increases the main SNES CPU speed and can affect compatibility. See the [MiSTer list of games](https://github.com/MiSTer-devel/SNES_MiSTer/blob/master/SNES_Turbo.md) for known behavior.
+* **SuperFX Turbo** increases the GSU speed. It can be combined with CPU Turbo in games such as Star Fox.
 
 ### Controller Options
 
-There are several options provided for selecting which type of controller the core will emulate.
-
-* `Gamepad` - The standard SNES controller used with most games.
-* `Super Scope` - The Super Scope lightgun that's used with most lightgun games. See Lightguns for more details.
-* `Justifier` - The Justifier lightgun that's used with Lethal Enforcers. See Lightguns for more details.
-* `Mouse` - The SNES mouse that's used with Mario Paint and several other games. See SNES Mouse for more details.
+Choose Gamepad, Super Scope, Justifier, or Mouse under **Controller Options**.
 
 ### Lightguns
 
-Core supports virtual lightguns by selecting the `Super Scope` or `Justifier` options under `Controller Options`. Most lightgun games user the Super Scope but Lethal Enforcers uses the Justifier. The crosshair can be controlled with the D-Pad or left joystick, using the A button to fire and the B button to reload. D-Pad aim sensitivity can be adjusted with the `D-Pad Aim Speed` setting.
+Most lightgun games use the Super Scope; Lethal Enforcers uses the Justifier. Move the crosshair with the D-pad or left stick. Press A to fire and B to reload. Adjust D-pad aim speed with **D-Pad Aim Speed**.
 
-**NOTE:** Joystick support for aiming only appears to work when a controller is paired over Bluetooth and not connected to the Analogue Dock directly by USB.
+Stick aiming may only work when a controller is paired over Bluetooth rather than connected directly to the Analogue Dock by USB.
 
 ### SNES Mouse
 
-Core supports a virtual SNES mouse by selecting `Mouse` under `Controller Options`. The mouse can be moved with the D-Pad or left joystick and left and right clicks can be performed by pressing the A and B buttons respectively. Mouse D-Pad movement sensitivity can be adjusted with the `D-Pad Aim Speed` setting.
+Move the mouse with the D-pad or left stick. Press A and B for left and right clicks. Adjust D-pad movement speed with **D-Pad Aim Speed**. The Dock firmware does not currently support a USB mouse.
 
-**NOTE:** The dock firmware doesn't currently support a USB mouse.
 ## License and packaging credits
 
-The existing [GPLv3 license](LICENSE) and upstream notices are retained. Packaging uses [agg23/pocketpublish](https://github.com/agg23/pocketpublish); its OpenGateware contributors’ MIT notice is preserved in the helper.
+The original [GPLv3 license](LICENSE) and upstream notices are retained. Packaging uses [agg23/pocketpublish](https://github.com/agg23/pocketpublish), with its OpenGateware contributors’ MIT notice preserved.
