@@ -1,5 +1,5 @@
 SNES core by srg320; Analogue Pocket port by agg23. Based on drizzt's SNES Experimental fork (upstream core version 0.4.4-experimental). Composite Blend filters by snckrz.
 
-Adds Composite Blend: Off, Kitrinx Style, NTSC Light/Medium/Strong, and PAL Light/Medium/Strong/Strong+. These are digital RGB-derived luma/chroma filters, not full analog composite emulation. Filtered RGB also feeds the Analogizer; Analogizer interface by RndMnkIII.
+Adds Composite Blend: Off, Kitrinx Style, NTSC Light/Medium/Strong, and PAL Light/Medium/Strong/Strong+. These are digital RGB-derived luma/chroma filters. Filtered RGB also feeds the Analogizer; Analogizer interface by RndMnkIII.
 
 Save-state support comes from drizzt's fork. Save states, Memories, and Sleep support regular carts and DSP, Super FX/GSU, SA-1, and CX4; they are unavailable for S-DD1, SPC7110, and BSX games.

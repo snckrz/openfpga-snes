@@ -3,13 +3,13 @@
   "repo": "openfpga-snes",
   "upstream": "drizzt/openfpga-snes",
   "core_id": "agg23.SNES_experimental",
-  "version": "2026.09.29-composite2-test1",
-  "build_date": "2026-09-29",
+  "version": "0.2.0-rc.2",
+  "build_date": "2026-10-05",
   "base_commit": "397f759356ec680dd516a05a89b3734ea5716d71",
   "base_label": "drizzt SNES Experimental",
   "bridge_address": "0x20C",
   "menu_id": 54,
-  "package": "agg23.SNES_experimental_2026.09.29-composite2-test1-2026-09-29.zip",
+  "package": "agg23.SNES_experimental_0.2.0-rc.2-2026-10-05.zip",
   "build_script": "build-composite.sh",
   "variants": [
     {
